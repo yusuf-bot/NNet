@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 
 interface ModelData {
@@ -20,230 +20,106 @@ interface NetworkVisualizerProps {
   isInferenceRunning: boolean;
 }
 
-interface Neuron {
-  x: number;
-  y: number;
-  layer: number;
-  index: number;
-  activation: number;
-  isActive: boolean;
-  isVisible: boolean;
-}
-
-interface Connection {
-  from: Neuron;
-  to: Neuron;
-  weight: number;
-  isActive: boolean;
-}
-
 const MAX_VISIBLE_NEURONS = 8;
 
 const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInferenceRunning }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [neurons, setNeurons] = useState<Neuron[]>([]);
-  const [connections, setConnections] = useState<Connection[]>([]);
   const [animationStep, setAnimationStep] = useState(0);
 
-  // Initialize network structure
-  useEffect(() => {
-    if (!modelData) return;
+  const { input_size, output_size, hidden_layers } = modelData.architecture;
+  const layers = [input_size, ...hidden_layers, output_size];
 
-    const { input_size, output_size, hidden_layers } = modelData.architecture;
-    const layers = [input_size, ...hidden_layers, output_size];
-    
-    const newNeurons: Neuron[] = [];
-    const newConnections: Connection[] = [];
-    
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const width = canvas.width;
-    const height = canvas.height;
-    const layerSpacing = width / (layers.length + 1);
-    
-    // Create neurons with smart visibility
-    layers.forEach((layerSize, layerIndex) => {
-      const visibleNeurons = Math.min(layerSize, MAX_VISIBLE_NEURONS);
-      const showEllipsis = layerSize > MAX_VISIBLE_NEURONS;
-      const actualVisibleCount = showEllipsis ? visibleNeurons - 1 : visibleNeurons;
-      
-      const neuronSpacing = height / (visibleNeurons + 1);
-      
-      for (let i = 0; i < layerSize; i++) {
-        const isVisible = i < actualVisibleCount || (showEllipsis && i === layerSize - 1);
-        const displayIndex = i < actualVisibleCount ? i : actualVisibleCount;
-        
-        newNeurons.push({
-          x: layerSpacing * (layerIndex + 1),
-          y: neuronSpacing * (displayIndex + 1),
-          layer: layerIndex,
-          index: i,
-          activation: 0,
-          isActive: false,
-          isVisible
-        });
-      }
-    });
-    
-    // Create connections only between visible neurons
-    for (let layerIndex = 0; layerIndex < layers.length - 1; layerIndex++) {
-      const currentLayerNeurons = newNeurons.filter(n => n.layer === layerIndex && n.isVisible);
-      const nextLayerNeurons = newNeurons.filter(n => n.layer === layerIndex + 1 && n.isVisible);
-      
-      currentLayerNeurons.forEach(fromNeuron => {
-        nextLayerNeurons.forEach(toNeuron => {
-          newConnections.push({
-            from: fromNeuron,
-            to: toNeuron,
-            weight: Math.random() * 2 - 1,
-            isActive: false
-          });
-        });
-      });
-    }
-    
-    setNeurons(newNeurons);
-    setConnections(newConnections);
-  }, [modelData]);
-
-  // Animation loop
+  // Animation logic
   useEffect(() => {
     if (!isInferenceRunning) {
       setAnimationStep(0);
-      setNeurons(prev => prev.map(n => ({ ...n, activation: 0, isActive: false })));
-      setConnections(prev => prev.map(c => ({ ...c, isActive: false })));
       return;
     }
 
     const animationInterval = setInterval(() => {
       setAnimationStep(prev => {
-        const maxLayers = modelData.architecture.hidden_layers.length + 2;
+        const maxLayers = layers.length;
         if (prev >= maxLayers) {
-          return maxLayers;
+          return 0; // Reset animation
         }
         return prev + 1;
       });
     }, 800);
 
     return () => clearInterval(animationInterval);
-  }, [isInferenceRunning, modelData]);
+  }, [isInferenceRunning, layers.length]);
 
-  // Update neuron activations based on animation step
-  useEffect(() => {
-    if (animationStep === 0) return;
-
-    setNeurons(prev => prev.map(neuron => ({
-      ...neuron,
-      isActive: neuron.layer < animationStep,
-      activation: neuron.layer < animationStep ? Math.random() * 0.8 + 0.2 : 0
-    })));
-
-    setConnections(prev => prev.map(connection => ({
-      ...connection,
-      isActive: connection.from.layer < animationStep - 1 && connection.to.layer < animationStep
-    })));
-  }, [animationStep]);
-
-  // Draw the network
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw connections
-    connections.forEach(connection => {
-      const { from, to, weight, isActive } = connection;
-      
-      ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
-      
-      if (isActive) {
-        ctx.strokeStyle = weight > 0 ? '#000000' : '#666666';
-        ctx.lineWidth = Math.abs(weight) * 2 + 1;
-        ctx.globalAlpha = 0.8;
-      } else {
-        ctx.strokeStyle = '#e5e5e5';
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = 0.3;
-      }
-      
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    });
-
-    // Draw neurons
-    const { input_size, output_size, hidden_layers } = modelData.architecture;
-    const layers = [input_size, ...hidden_layers, output_size];
+  const renderLayer = (layerSize: number, layerIndex: number) => {
+    const visibleNeurons = Math.min(layerSize, MAX_VISIBLE_NEURONS);
+    const showEllipsis = layerSize > MAX_VISIBLE_NEURONS;
+    const actualVisibleCount = showEllipsis ? visibleNeurons - 1 : visibleNeurons;
     
-    neurons.filter(n => n.isVisible).forEach(neuron => {
-      const { x, y, activation, isActive, layer } = neuron;
+    const neurons = [];
+    
+    // Add visible neurons
+    for (let i = 0; i < actualVisibleCount; i++) {
+      const isActive = animationStep > layerIndex;
+      neurons.push(
+        <div
+          key={i}
+          className={`w-8 h-8 rounded-full border-2 transition-all duration-500 ${
+            isActive 
+              ? 'bg-foreground border-foreground shadow-lg' 
+              : 'bg-background border-border'
+          }`}
+        />
+      );
+    }
+    
+    // Add ellipsis if needed
+    if (showEllipsis) {
+      neurons.push(
+        <div key="ellipsis" className="text-xs text-muted-foreground text-center py-2">
+          ({layerSize - actualVisibleCount} more...)
+        </div>
+      );
       
-      ctx.beginPath();
-      ctx.arc(x, y, 16, 0, 2 * Math.PI);
-      
-      if (isActive) {
-        ctx.fillStyle = `rgba(0, 0, 0, ${0.2 + activation * 0.6})`;
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 8;
-      } else {
-        ctx.fillStyle = '#f5f5f5';
-        ctx.shadowBlur = 0;
-      }
-      
-      ctx.fill();
-      
-      // Border
-      ctx.strokeStyle = isActive ? '#000000' : '#cccccc';
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 0;
-      ctx.stroke();
-    });
+      // Add last neuron
+      const isActive = animationStep > layerIndex;
+      neurons.push(
+        <div
+          key="last"
+          className={`w-8 h-8 rounded-full border-2 transition-all duration-500 ${
+            isActive 
+              ? 'bg-foreground border-foreground shadow-lg' 
+              : 'bg-background border-border'
+          }`}
+        />
+      );
+    }
+    
+    return neurons;
+  };
 
-    // Draw ellipsis and layer info
-    layers.forEach((layerSize, layerIndex) => {
-      if (layerSize > MAX_VISIBLE_NEURONS) {
-        const layerSpacing = canvas.width / (layers.length + 1);
-        const x = layerSpacing * (layerIndex + 1);
-        const neuronSpacing = canvas.height / (Math.min(layerSize, MAX_VISIBLE_NEURONS) + 1);
-        const ellipsisY = neuronSpacing * (MAX_VISIBLE_NEURONS - 1);
-        
-        ctx.fillStyle = '#666666';
-        ctx.font = '14px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`(${layerSize - MAX_VISIBLE_NEURONS + 1} more...)`, x, ellipsisY);
-      }
+  const renderConnections = () => {
+    const connections = [];
+    
+    for (let layerIndex = 0; layerIndex < layers.length - 1; layerIndex++) {
+      const fromLayerSize = Math.min(layers[layerIndex], MAX_VISIBLE_NEURONS);
+      const toLayerSize = Math.min(layers[layerIndex + 1], MAX_VISIBLE_NEURONS);
       
-      // Layer labels
-      const layerSpacing = canvas.width / (layers.length + 1);
-      const x = layerSpacing * (layerIndex + 1);
+      const isActive = animationStep > layerIndex && animationStep > layerIndex + 1;
       
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 16px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      
-      let label = '';
-      if (layerIndex === 0) label = 'Input';
-      else if (layerIndex === layers.length - 1) label = 'Output';
-      else label = `Hidden ${layerIndex}`;
-      
-      ctx.fillText(label, x, 30);
-      ctx.font = '12px Inter, sans-serif';
-      ctx.fillStyle = '#666666';
-      ctx.fillText(`(${layerSize})`, x, 50);
-    });
-  }, [neurons, connections, modelData]);
+      // Create a visual representation of connections between layers
+      connections.push(
+        <div key={layerIndex} className="flex-1 flex items-center justify-center">
+          <div className={`h-px bg-border transition-all duration-500 w-full ${
+            isActive ? 'bg-foreground opacity-60' : 'opacity-20'
+          }`} />
+        </div>
+      );
+    }
+    
+    return connections;
+  };
 
   return (
-    <Card className="border-2 p-6">
-      <div className="mb-4">
+    <div className="border-2 border-border rounded-lg p-6 bg-background">
+      <div className="mb-6">
         <h3 className="text-xl font-semibold text-foreground mb-2">Network Architecture</h3>
         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
           <span>Input: {modelData.architecture.input_size}</span>
@@ -253,19 +129,42 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
         </div>
       </div>
       
-      <div className="relative">
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={400}
-          className="w-full h-96 bg-white rounded-lg border-2 border-border"
-        />
-        
+      <div className="relative bg-white rounded-lg border-2 border-border p-8 min-h-96">
         {isInferenceRunning && (
           <div className="absolute top-4 right-4 bg-foreground text-background px-3 py-1 rounded-full text-sm font-medium animate-pulse">
             Processing...
           </div>
         )}
+        
+        <div className="flex items-center justify-between h-full min-h-80">
+          {layers.map((layerSize, layerIndex) => (
+            <React.Fragment key={layerIndex}>
+              <div className="flex flex-col items-center space-y-4">
+                {/* Layer Label */}
+                <div className="text-center mb-4">
+                  <div className="text-lg font-semibold text-foreground">
+                    {layerIndex === 0 ? 'Input' : 
+                     layerIndex === layers.length - 1 ? 'Output' : 
+                     `Hidden ${layerIndex}`}
+                  </div>
+                  <div className="text-sm text-muted-foreground">({layerSize})</div>
+                </div>
+                
+                {/* Neurons */}
+                <div className="flex flex-col items-center space-y-3">
+                  {renderLayer(layerSize, layerIndex)}
+                </div>
+              </div>
+              
+              {/* Connections */}
+              {layerIndex < layers.length - 1 && (
+                <div className="flex-1 mx-4">
+                  {renderConnections()}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
       </div>
       
       <div className="mt-4 text-center text-muted-foreground text-sm">
@@ -274,7 +173,7 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
           'Make a prediction to see the network in action'
         }
       </div>
-    </Card>
+    </div>
   );
 };
 

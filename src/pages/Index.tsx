@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Brain, Play, Download, FileText } from 'lucide-react';
+import { Upload, Brain, Download } from 'lucide-react';
 import TrainingPanel from '@/components/TrainingPanel';
 import NetworkVisualizer from '@/components/NetworkVisualizer';
 import PredictionPanel from '@/components/PredictionPanel';
@@ -45,6 +44,22 @@ const Index = () => {
     setModelData(null);
   };
 
+  const handleDownloadModel = () => {
+    if (!modelData) return;
+    
+    const dataStr = JSON.stringify(modelData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'model.nn';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -61,63 +76,40 @@ const Index = () => {
 
         {/* Main Content */}
         {activeView === 'menu' && (
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-3xl mx-auto">
             <div className="grid md:grid-cols-2 gap-8">
               {/* Train New Model */}
-              <Card className="border-2 hover:border-foreground transition-all duration-300 hover:shadow-lg">
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-6 bg-foreground rounded-full flex items-center justify-center">
-                    <Brain className="w-8 h-8 text-background" />
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-4 text-foreground">Train New Model</h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    Upload your CSV data and configure a neural network from scratch
-                  </p>
-                  <Button 
-                    onClick={() => setActiveView('train')}
-                    className="w-full bg-foreground hover:bg-foreground/90 text-background font-medium py-3"
-                  >
-                    Start Training
-                  </Button>
+              <div className="p-8 text-center border-2 border-border rounded-lg hover:border-foreground transition-colors">
+                <div className="w-16 h-16 mx-auto mb-6 bg-foreground rounded-full flex items-center justify-center">
+                  <Brain className="w-8 h-8 text-background" />
                 </div>
-              </Card>
+                <h3 className="text-2xl font-semibold mb-4 text-foreground">Train New Model</h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Upload your CSV data and configure a neural network from scratch
+                </p>
+                <Button 
+                  onClick={() => setActiveView('train')}
+                  className="w-full bg-foreground hover:bg-foreground/90 text-background font-medium py-3"
+                >
+                  Start Training
+                </Button>
+              </div>
 
               {/* Load Existing Model */}
-              <Card className="border-2 hover:border-foreground transition-all duration-300 hover:shadow-lg">
-                <div className="p-8 text-center">
-                  <div className="w-16 h-16 mx-auto mb-6 bg-foreground rounded-full flex items-center justify-center">
-                    <Upload className="w-8 h-8 text-background" />
-                  </div>
-                  <h3 className="text-2xl font-semibold mb-4 text-foreground">Load Existing Model</h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
-                    Upload a pre-trained .nn model file and start making predictions
-                  </p>
-                  <Button 
-                    onClick={() => setActiveView('load')}
-                    className="w-full bg-foreground hover:bg-foreground/90 text-background font-medium py-3"
-                  >
-                    Load Model
-                  </Button>
+              <div className="p-8 text-center border-2 border-border rounded-lg hover:border-foreground transition-colors">
+                <div className="w-16 h-16 mx-auto mb-6 bg-foreground rounded-full flex items-center justify-center">
+                  <Upload className="w-8 h-8 text-background" />
                 </div>
-              </Card>
-            </div>
-
-            {/* Features */}
-            <div className="mt-16 grid md:grid-cols-3 gap-8 text-center">
-              <div className="p-6">
-                <Play className="w-12 h-12 mx-auto mb-4 text-foreground" />
-                <h4 className="text-lg font-semibold mb-2 text-foreground">Real-time Visualization</h4>
-                <p className="text-muted-foreground leading-relaxed">Watch data flow through your network with smooth animations</p>
-              </div>
-              <div className="p-6">
-                <FileText className="w-12 h-12 mx-auto mb-4 text-foreground" />
-                <h4 className="text-lg font-semibold mb-2 text-foreground">Batch & Single Predictions</h4>
-                <p className="text-muted-foreground leading-relaxed">Make predictions on CSV files or individual inputs</p>
-              </div>
-              <div className="p-6">
-                <Download className="w-12 h-12 mx-auto mb-4 text-foreground" />
-                <h4 className="text-lg font-semibold mb-2 text-foreground">Export Models</h4>
-                <p className="text-muted-foreground leading-relaxed">Save and share your trained models as .nn files</p>
+                <h3 className="text-2xl font-semibold mb-4 text-foreground">Load Existing Model</h3>
+                <p className="text-muted-foreground mb-6 leading-relaxed">
+                  Upload a pre-trained .nn model file and start making predictions
+                </p>
+                <Button 
+                  onClick={() => setActiveView('load')}
+                  className="w-full bg-foreground hover:bg-foreground/90 text-background font-medium py-3"
+                >
+                  Load Model
+                </Button>
               </div>
             </div>
           </div>
@@ -150,7 +142,13 @@ const Index = () => {
               <h2 className="text-3xl font-bold text-foreground">
                 Neural Network Visualizer
               </h2>
-              <div></div>
+              <Button 
+                onClick={handleDownloadModel}
+                className="bg-foreground hover:bg-foreground/90 text-background font-medium"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Download Model
+              </Button>
             </div>
             
             <div className="grid lg:grid-cols-3 gap-8">
