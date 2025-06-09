@@ -1,6 +1,4 @@
-
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,18 +90,18 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
   };
 
   return (
-    <div className="border-2 border-border rounded-lg p-6 bg-background">
+    <div className="p-6 bg-white">
       <div className="mb-6">
-        <h3 className="text-xl font-semibold text-foreground mb-4">Make Predictions</h3>
+        <h3 className="text-xl font-semibold text-black mb-4">Make Predictions</h3>
         
         {/* Tabs */}
-        <div className="flex border-b border-border">
+        <div className="flex border-b border-gray-300">
           <button
             onClick={() => setActiveTab('single')}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'single'
-                ? 'border-foreground text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-black text-black'
+                : 'border-transparent text-gray-600 hover:text-black'
             }`}
           >
             Single Prediction
@@ -112,8 +110,8 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
             onClick={() => setActiveTab('batch')}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === 'batch'
-                ? 'border-foreground text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-black text-black'
+                : 'border-transparent text-gray-600 hover:text-black'
             }`}
           >
             Batch Prediction
@@ -124,13 +122,13 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
       {activeTab === 'single' && (
         <div className="space-y-4">
           <div className="flex items-center mb-4">
-            <Calculator className="w-5 h-5 text-foreground mr-2" />
-            <Label className="text-foreground font-medium">Input Features</Label>
+            <Calculator className="w-5 h-5 text-black mr-2" />
+            <Label className="text-black font-medium">Input Features</Label>
           </div>
           
           {singleInputs.map((input, index) => (
             <div key={index}>
-              <Label htmlFor={`input-${index}`} className="text-foreground">
+              <Label htmlFor={`input-${index}`} className="text-black">
                 Feature {index + 1}
               </Label>
               <Input
@@ -138,7 +136,7 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
                 value={input}
                 onChange={(e) => handleSingleInputChange(index, e.target.value)}
                 placeholder={`Enter value for feature ${index + 1}`}
-                className="bg-background border-2 border-border text-foreground focus:border-foreground"
+                className="bg-white border-2 border-gray-300 text-black focus:border-black"
               />
             </div>
           ))}
@@ -146,11 +144,11 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
           <Button
             onClick={handleSinglePrediction}
             disabled={isLoading || singleInputs.some(val => val === '')}
-            className="w-full bg-foreground hover:bg-foreground/90 text-background font-medium mt-4"
+            className="w-full bg-black hover:bg-gray-800 text-white font-medium mt-4"
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Predicting...
               </>
             ) : (
@@ -159,12 +157,12 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
           </Button>
           
           {prediction && (
-            <div className="mt-6 p-4 bg-muted rounded-lg">
+            <div className="mt-6 p-4 bg-gray-100 rounded-lg">
               <div className="flex items-center mb-2">
-                <Target className="w-5 h-5 text-foreground mr-2" />
-                <Label className="text-foreground font-medium">Prediction Result</Label>
+                <Target className="w-5 h-5 text-black mr-2" />
+                <Label className="text-black font-medium">Prediction Result</Label>
               </div>
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold text-black">
                 {prediction[0]?.toFixed(4)}
               </div>
             </div>
@@ -175,11 +173,11 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
       {activeTab === 'batch' && (
         <div className="space-y-4">
           <div className="flex items-center mb-4">
-            <FileText className="w-5 h-5 text-foreground mr-2" />
-            <Label className="text-foreground font-medium">Batch Prediction</Label>
+            <FileText className="w-5 h-5 text-black mr-2" />
+            <Label className="text-black font-medium">Batch Prediction</Label>
           </div>
           
-          <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-foreground transition-colors">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-black transition-colors">
             <input
               type="file"
               accept=".csv"
@@ -188,11 +186,11 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
               id="batch-upload"
             />
             <label htmlFor="batch-upload" className="cursor-pointer">
-              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-foreground mb-1 font-medium">
+              <Upload className="w-8 h-8 mx-auto mb-2 text-gray-600" />
+              <p className="text-black mb-1 font-medium">
                 {batchFile ? batchFile.name : 'Click to upload CSV file'}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-gray-600">
                 Upload CSV with input features (no headers)
               </p>
             </label>
@@ -201,11 +199,11 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
           <Button
             onClick={handleBatchPrediction}
             disabled={!batchFile || isLoading}
-            className="w-full bg-foreground hover:bg-foreground/90 text-background font-medium"
+            className="w-full bg-black hover:bg-gray-800 text-white font-medium"
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Processing...
               </>
             ) : (
@@ -213,7 +211,7 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({
             )}
           </Button>
           
-          <p className="text-xs text-muted-foreground text-center">
+          <p className="text-xs text-gray-600 text-center">
             Results will be automatically downloaded as CSV
           </p>
         </div>
