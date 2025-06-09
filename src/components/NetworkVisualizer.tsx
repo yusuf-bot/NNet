@@ -61,10 +61,10 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
       neurons.push(
         <div
           key={i}
-          className={`w-8 h-8 rounded-full border-2 transition-all duration-500 ${
+          className={`w-8 h-8 rounded-full border-2 border-foreground transition-all duration-500 ${
             isActive 
-              ? 'bg-foreground border-foreground shadow-lg' 
-              : 'bg-background border-border'
+              ? 'bg-foreground shadow-lg' 
+              : 'bg-background'
           }`}
         />
       );
@@ -83,10 +83,10 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
       neurons.push(
         <div
           key="last"
-          className={`w-8 h-8 rounded-full border-2 transition-all duration-500 ${
+          className={`w-8 h-8 rounded-full border-2 border-foreground transition-all duration-500 ${
             isActive 
-              ? 'bg-foreground border-foreground shadow-lg' 
-              : 'bg-background border-border'
+              ? 'bg-foreground shadow-lg' 
+              : 'bg-background'
           }`}
         />
       );
@@ -97,6 +97,8 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
 
   const renderConnections = () => {
     const connections = [];
+    const layerSpacing = 200; // Distance between layers
+    const neuronSpacing = 48; // Distance between neurons in a layer
     
     for (let layerIndex = 0; layerIndex < layers.length - 1; layerIndex++) {
       const fromLayerSize = Math.min(layers[layerIndex], MAX_VISIBLE_NEURONS);
@@ -104,14 +106,73 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
       
       const isActive = animationStep > layerIndex && animationStep > layerIndex + 1;
       
-      // Create a visual representation of connections between layers
-      connections.push(
-        <div key={layerIndex} className="flex-1 flex items-center justify-center">
-          <div className={`h-px bg-border transition-all duration-500 w-full ${
-            isActive ? 'bg-foreground opacity-60' : 'opacity-20'
-          }`} />
-        </div>
-      );
+      // Calculate positions for from and to neurons
+      const fromNeurons = layers[layerIndex] > MAX_VISIBLE_NEURONS ? fromLayerSize - 1 : fromLayerSize;
+      const toNeurons = layers[layerIndex + 1] > MAX_VISIBLE_NEURONS ? toLayerSize - 1 : toLayerSize;
+      
+      // Create connections between all visible neurons
+      for (let fromNeuron = 0; fromNeuron < fromNeurons; fromNeuron++) {
+        for (let toNeuron = 0; toNeuron < toNeurons; toNeuron++) {
+          const fromY = (fromNeuron - (fromNeurons - 1) / 2) * neuronSpacing;
+          const toY = (toNeuron - (toNeurons - 1) / 2) * neuronSpacing;
+          
+          connections.push(
+            <line
+              key={`${layerIndex}-${fromNeuron}-${toNeuron}`}
+              x1={layerIndex * layerSpacing + 16} // 16 is half of neuron width
+              y1={fromY}
+              x2={(layerIndex + 1) * layerSpacing + 16}
+              y2={toY}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={isActive ? "2" : "1"}
+              opacity={isActive ? "0.8" : "0.3"}
+              className="transition-all duration-500"
+            />
+          );
+        }
+      }
+      
+      // Add connections for the last neuron if there are hidden neurons
+      if (layers[layerIndex] > MAX_VISIBLE_NEURONS) {
+        const lastFromY = (fromLayerSize - 1 - (fromLayerSize - 1) / 2) * neuronSpacing + neuronSpacing;
+        for (let toNeuron = 0; toNeuron < toNeurons; toNeuron++) {
+          const toY = (toNeuron - (toNeurons - 1) / 2) * neuronSpacing;
+          connections.push(
+            <line
+              key={`${layerIndex}-last-${toNeuron}`}
+              x1={layerIndex * layerSpacing + 16}
+              y1={lastFromY}
+              x2={(layerIndex + 1) * layerSpacing + 16}
+              y2={toY}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={isActive ? "2" : "1"}
+              opacity={isActive ? "0.8" : "0.3"}
+              className="transition-all duration-500"
+            />
+          );
+        }
+      }
+      
+      // Add connections to the last neuron if there are hidden neurons in the next layer
+      if (layers[layerIndex + 1] > MAX_VISIBLE_NEURONS) {
+        const lastToY = (toLayerSize - 1 - (toLayerSize - 1) / 2) * neuronSpacing + neuronSpacing;
+        for (let fromNeuron = 0; fromNeuron < fromNeurons; fromNeuron++) {
+          const fromY = (fromNeuron - (fromNeurons - 1) / 2) * neuronSpacing;
+          connections.push(
+            <line
+              key={`${layerIndex}-${fromNeuron}-last`}
+              x1={layerIndex * layerSpacing + 16}
+              y1={fromY}
+              x2={(layerIndex + 1) * layerSpacing + 16}
+              y2={lastToY}
+              stroke="hsl(var(--foreground))"
+              strokeWidth={isActive ? "2" : "1"}
+              opacity={isActive ? "0.8" : "0.3"}
+              className="transition-all duration-500"
+            />
+          );
+        }
+      }
     }
     
     return connections;
@@ -129,41 +190,101 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
         </div>
       </div>
       
-      <div className="relative bg-white rounded-lg border-2 border-border p-8 min-h-96">
+      <div className="relative bg-background rounded-lg border-2 border-border p-8 min-h-96">
         {isInferenceRunning && (
           <div className="absolute top-4 right-4 bg-foreground text-background px-3 py-1 rounded-full text-sm font-medium animate-pulse">
             Processing...
           </div>
         )}
         
-        <div className="flex items-center justify-between h-full min-h-80">
-          {layers.map((layerSize, layerIndex) => (
-            <React.Fragment key={layerIndex}>
-              <div className="flex flex-col items-center space-y-4">
-                {/* Layer Label */}
-                <div className="text-center mb-4">
-                  <div className="text-lg font-semibold text-foreground">
+        <div className="flex items-center justify-center h-full min-h-80 overflow-x-auto">
+          <svg
+            width={layers.length * 200}
+            height="400"
+            viewBox={`0 0 ${layers.length * 200} 400`}
+            className="mx-auto"
+          >
+            {/* Render connections first (behind neurons) */}
+            <g transform="translate(0, 200)">
+              {renderConnections()}
+            </g>
+            
+            {/* Render neurons */}
+            {layers.map((layerSize, layerIndex) => {
+              const visibleNeurons = Math.min(layerSize, MAX_VISIBLE_NEURONS);
+              const showEllipsis = layerSize > MAX_VISIBLE_NEURONS;
+              const actualVisibleCount = showEllipsis ? visibleNeurons - 1 : visibleNeurons;
+              const neuronSpacing = 48;
+              
+              return (
+                <g key={layerIndex} transform={`translate(${layerIndex * 200}, 200)`}>
+                  {/* Layer Label */}
+                  <text
+                    x="16"
+                    y="-120"
+                    textAnchor="middle"
+                    className="text-lg font-semibold fill-foreground"
+                  >
                     {layerIndex === 0 ? 'Input' : 
                      layerIndex === layers.length - 1 ? 'Output' : 
                      `Hidden ${layerIndex}`}
-                  </div>
-                  <div className="text-sm text-muted-foreground">({layerSize})</div>
-                </div>
-                
-                {/* Neurons */}
-                <div className="flex flex-col items-center space-y-3">
-                  {renderLayer(layerSize, layerIndex)}
-                </div>
-              </div>
-              
-              {/* Connections */}
-              {layerIndex < layers.length - 1 && (
-                <div className="flex-1 mx-4">
-                  {renderConnections()}
-                </div>
-              )}
-            </React.Fragment>
-          ))}
+                  </text>
+                  <text
+                    x="16"
+                    y="-100"
+                    textAnchor="middle"
+                    className="text-sm fill-muted-foreground"
+                  >
+                    ({layerSize})
+                  </text>
+                  
+                  {/* Neurons */}
+                  {Array.from({ length: actualVisibleCount }).map((_, neuronIndex) => {
+                    const isActive = animationStep > layerIndex;
+                    const y = (neuronIndex - (actualVisibleCount - 1) / 2) * neuronSpacing;
+                    
+                    return (
+                      <circle
+                        key={neuronIndex}
+                        cx="16"
+                        cy={y}
+                        r="16"
+                        fill={isActive ? "hsl(var(--foreground))" : "hsl(var(--background))"}
+                        stroke="hsl(var(--foreground))"
+                        strokeWidth="2"
+                        className="transition-all duration-500"
+                      />
+                    );
+                  })}
+                  
+                  {/* Ellipsis */}
+                  {showEllipsis && (
+                    <>
+                      <text
+                        x="16"
+                        y={(actualVisibleCount - (actualVisibleCount - 1) / 2) * neuronSpacing + 24}
+                        textAnchor="middle"
+                        className="text-xs fill-muted-foreground"
+                      >
+                        ({layerSize - actualVisibleCount} more...)
+                      </text>
+                      
+                      {/* Last neuron */}
+                      <circle
+                        cx="16"
+                        cy={(actualVisibleCount - (actualVisibleCount - 1) / 2) * neuronSpacing + 48}
+                        r="16"
+                        fill={animationStep > layerIndex ? "hsl(var(--foreground))" : "hsl(var(--background))"}
+                        stroke="hsl(var(--foreground))"
+                        strokeWidth="2"
+                        className="transition-all duration-500"
+                      />
+                    </>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
         </div>
       </div>
       
