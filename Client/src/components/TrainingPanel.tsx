@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, Brain, Settings } from 'lucide-react';
+import { trainModel } from '../api';
 
 interface TrainingPanelProps {
   onModelTrained: (modelData: any) => void;
@@ -18,38 +18,71 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ onModelTrained, onBack })
   const [epochs, setEpochs] = useState('1000');
   const [lossFunction, setLossFunction] = useState('mse');
   const [isTraining, setIsTraining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'text/csv') {
       setCsvFile(file);
+      setError(null);
+    } else {
+      setError('Please upload a valid CSV file');
     }
   };
 
+  const validateInputs = () => {
+    const layers = hiddenLayers.split(' ').map(n => parseInt(n)).filter(n => !isNaN(n));
+    if (layers.length === 0) {
+      return 'Hidden layers must contain at least one valid integer';
+    }
+
+    const lr = parseFloat(learningRate);
+    if (isNaN(lr) || lr <= 0) {
+      return 'Learning rate must be a positive number';
+    }
+
+    const ep = parseInt(epochs);
+    if (isNaN(ep) || ep <= 0) {
+      return 'Epochs must be a positive integer';
+    }
+
+    if (!['mse', 'mae', 'cross_entropy'].includes(lossFunction)) {
+      return 'Invalid loss function selected';
+    }
+
+    return null;
+  };
+
   const handleTrain = async () => {
-    if (!csvFile) return;
+    if (!csvFile) {
+      setError('Please upload a CSV file');
+      return;
+    }
+
+    const validationError = validateInputs();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     setIsTraining(true);
-    
-    setTimeout(() => {
-      const hiddenLayersArray = hiddenLayers.split(' ').map(n => parseInt(n)).filter(n => !isNaN(n));
-      
-      const mockModelData = {
-        architecture: {
-          input_size: 3,
-          output_size: 1,
-          hidden_layers: hiddenLayersArray.length > 0 ? hiddenLayersArray : [64, 32]
-        },
-        training_config: {
-          activation_names: ['relu', ...hiddenLayersArray.map(() => 'relu'), 'identity'],
-          loss_function: lossFunction,
-          learning_rate: parseFloat(learningRate)
-        }
-      };
-      
+    setError(null);
+
+    try {
+      const response = await trainModel(
+        csvFile,
+        hiddenLayers,
+        learningRate,
+        epochs,
+        lossFunction
+      );
       setIsTraining(false);
-      onModelTrained(mockModelData);
-    }, 3000);
+      onModelTrained(response);
+    } catch (err: any) {
+      console.error('Training error:', err);
+      setIsTraining(false);
+      setError(err.message || 'Training failed');
+    }
   };
 
   return (
@@ -60,8 +93,22 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ onModelTrained, onBack })
             <Brain className="w-8 h-8 text-foreground mr-3" />
             <h2 className="text-3xl font-bold text-foreground">Train New Model</h2>
           </div>
+          <div className='flex items-center mb-4'>
+            <p className="text-l font-bold text-foreground">
+            Ensure that the CSV is properly configured with input fields labeled "x1" and "x2", and output fields, if present, labeled "y1" and "y2". The model performs optimally with supervised learning but can also support unsupervised learning.
+            </p>
+          </div>
+        
           <p className="text-muted-foreground">Upload your training data and configure your neural network</p>
-        </div>
+          
+        
+      </div>
+
+        {error && (
+          <div className="mb-4 text-red-500">
+            {error}
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-8">
           {/* Data Upload */}

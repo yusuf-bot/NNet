@@ -20,8 +20,14 @@ interface TrainingConfig {
 }
 
 interface ModelData {
+  model_info: {
+    created_at: string;
+    version: string;
+  };
   architecture: ModelArchitecture;
   training_config: TrainingConfig;
+  layers: any[];
+  metadata: any;
 }
 
 const Index = () => {
@@ -53,7 +59,7 @@ const Index = () => {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'model.nn';
+    link.download = `model_${modelData.model_info.created_at.replace(/[:.]/g, '-')}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -68,7 +74,7 @@ const Index = () => {
           <div className="flex items-center justify-center mb-6">
             <Brain className="w-12 h-12 text-foreground mr-4" />
             <h1 className="text-5xl font-bold text-foreground">
-              Neural Network Studio
+              BUILD-A-BRAIN
             </h1>
           </div>
           <p className="text-xl text-muted-foreground font-medium">Build, Train, and Visualize Neural Networks</p>

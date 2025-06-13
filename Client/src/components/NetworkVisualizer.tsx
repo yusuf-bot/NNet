@@ -26,6 +26,13 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
   const { input_size, output_size, hidden_layers } = modelData.architecture;
   const layers = [input_size, ...hidden_layers, output_size];
 
+  // Get layer names
+  const getLayerName = (layerIndex: number) => {
+    if (layerIndex === 0) return 'Input Layer';
+    if (layerIndex === layers.length - 1) return 'Output Layer';
+    return `Hidden Layer ${layerIndex}`;
+  };
+
   // Animation logic
   useEffect(() => {
     if (!isInferenceRunning) {
@@ -45,53 +52,6 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
 
     return () => clearInterval(animationInterval);
   }, [isInferenceRunning, layers.length]);
-
-  const renderLayer = (layerSize: number, layerIndex: number) => {
-    const visibleNeurons = Math.min(layerSize, MAX_VISIBLE_NEURONS);
-    const showEllipsis = layerSize > MAX_VISIBLE_NEURONS;
-    const actualVisibleCount = showEllipsis ? visibleNeurons - 1 : visibleNeurons;
-    
-    const neurons = [];
-    
-    // Add visible neurons
-    for (let i = 0; i < actualVisibleCount; i++) {
-      const isActive = animationStep > layerIndex;
-      neurons.push(
-        <div
-          key={i}
-          className={`w-8 h-8 rounded-full border-2 border-black transition-all duration-500 ${
-            isActive 
-              ? 'bg-black shadow-lg' 
-              : 'bg-white'
-          }`}
-        />
-      );
-    }
-    
-    // Add ellipsis if needed
-    if (showEllipsis) {
-      neurons.push(
-        <div key="ellipsis" className="text-xs text-gray-600 text-center py-2">
-          ({layerSize - actualVisibleCount} more...)
-        </div>
-      );
-      
-      // Add last neuron
-      const isActive = animationStep > layerIndex;
-      neurons.push(
-        <div
-          key="last"
-          className={`w-8 h-8 rounded-full border-2 border-black transition-all duration-500 ${
-            isActive 
-              ? 'bg-black shadow-lg' 
-              : 'bg-white'
-          }`}
-        />
-      );
-    }
-    
-    return neurons;
-  };
 
   const renderConnections = () => {
     const connections = [];
@@ -116,9 +76,9 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
           connections.push(
             <line
               key={`${layerIndex}-${fromNeuron}-${toNeuron}`}
-              x1={layerIndex * layerSpacing + 16}
+              x1={layerIndex * layerSpacing + leftPadding + 16}
               y1={fromY}
-              x2={(layerIndex + 1) * layerSpacing + 16}
+              x2={(layerIndex + 1) * layerSpacing + leftPadding + 16}
               y2={toY}
               stroke="black"
               strokeWidth={isActive ? "2" : "1"}
@@ -137,9 +97,9 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
           connections.push(
             <line
               key={`${layerIndex}-last-${toNeuron}`}
-              x1={layerIndex * layerSpacing + 16}
+              x1={layerIndex * layerSpacing + leftPadding + 16}
               y1={lastFromY}
-              x2={(layerIndex + 1) * layerSpacing + 16}
+              x2={(layerIndex + 1) * layerSpacing + leftPadding + 16}
               y2={toY}
               stroke="black"
               strokeWidth={isActive ? "2" : "1"}
@@ -158,9 +118,9 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
           connections.push(
             <line
               key={`${layerIndex}-${fromNeuron}-last`}
-              x1={layerIndex * layerSpacing + 16}
+              x1={layerIndex * layerSpacing + leftPadding + 16}
               y1={fromY}
-              x2={(layerIndex + 1) * layerSpacing + 16}
+              x2={(layerIndex + 1) * layerSpacing + leftPadding + 16}
               y2={lastToY}
               stroke="black"
               strokeWidth={isActive ? "2" : "1"}
@@ -175,6 +135,15 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
     return connections;
   };
 
+  // Calculate dimensions for proper sizing
+  const layerSpacing = 200;
+  const neuronSpacing = 48;
+  const maxNeuronsInLayer = Math.max(...layers.map(size => Math.min(size, MAX_VISIBLE_NEURONS)));
+  const svgWidth = layers.length * layerSpacing + 100; // Extra padding for titles
+  const svgHeight = Math.max(500, maxNeuronsInLayer * neuronSpacing + 300); // Extra space for titles and ellipsis
+  const centerY = svgHeight / 2;
+  const leftPadding = 50; // Padding to prevent title cutoff
+
   return (
     <div className="p-6 bg-white">
       {isInferenceRunning && (
@@ -183,71 +152,98 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
         </div>
       )}
       
-      <div className="flex items-center justify-center h-full min-h-80 overflow-x-auto">
-        <div className="relative">
+      <div className="flex items-center justify-center w-full overflow-x-auto">
+        <div className="min-w-fit">
           <svg
-            width={layers.length * 200}
-            height="400"
-            viewBox={`0 0 ${layers.length * 200} 400`}
+            width={svgWidth}
+            height={svgHeight}
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
             className="mx-auto"
+            style={{ minWidth: svgWidth }}
           >
             {/* Render connections first (behind neurons) */}
-            <g transform="translate(0, 200)">
+            <g transform={`translate(0, ${centerY})`}>
               {renderConnections()}
             </g>
             
-            {/* Render neurons */}
+            {/* Render layer titles and neurons */}
             {layers.map((layerSize, layerIndex) => {
               const visibleNeurons = Math.min(layerSize, MAX_VISIBLE_NEURONS);
               const showEllipsis = layerSize > MAX_VISIBLE_NEURONS;
               const actualVisibleCount = showEllipsis ? visibleNeurons - 1 : visibleNeurons;
-              const neuronSpacing = 48;
               
               return (
-                <g key={layerIndex} transform={`translate(${layerIndex * 200}, 200)`}>
-                  {/* Neurons */}
-                  {Array.from({ length: actualVisibleCount }).map((_, neuronIndex) => {
-                    const isActive = animationStep > layerIndex;
-                    const y = (neuronIndex - (actualVisibleCount - 1) / 2) * neuronSpacing;
-                    
-                    return (
-                      <circle
-                        key={neuronIndex}
-                        cx="16"
-                        cy={y}
-                        r="16"
-                        fill={isActive ? "black" : "white"}
-                        stroke="black"
-                        strokeWidth="2"
-                        className="transition-all duration-500"
-                      />
-                    );
-                  })}
+                <g key={layerIndex}>
+                  {/* Layer Title */}
+                  <text
+                    x={layerIndex * layerSpacing + leftPadding + 16}
+                    y={60}
+                    textAnchor="middle"
+                    className="text-sm font-semibold fill-black"
+                  >
+                    {getLayerName(layerIndex)}
+                  </text>
+                  <text
+                    x={layerIndex * layerSpacing + leftPadding + 16}
+                    y={78}
+                    textAnchor="middle"
+                    className="text-xs fill-gray-600"
+                  >
+                    ({layerSize} neurons)
+                  </text>
                   
-                  {/* Ellipsis */}
-                  {showEllipsis && (
-                    <>
-                      <text
-                        x="16"
-                        y={(actualVisibleCount - (actualVisibleCount - 1) / 2) * neuronSpacing + 24}
-                        textAnchor="middle"
-                        className="text-xs fill-gray-600"
-                      >
-                        ({layerSize - actualVisibleCount} more...)
-                      </text>
+                  {/* Neurons */}
+                  <g transform={`translate(${layerIndex * layerSpacing + leftPadding}, ${centerY})`}>
+                    {Array.from({ length: actualVisibleCount }).map((_, neuronIndex) => {
+                      const isActive = animationStep > layerIndex;
+                      const y = (neuronIndex - (actualVisibleCount - 1) / 2) * neuronSpacing;
                       
-                      {/* Last neuron */}
-                      <circle
-                        cx="16"
-                        cy={(actualVisibleCount - (actualVisibleCount - 1) / 2) * neuronSpacing + 48}
-                        r="16"
-                        fill={animationStep > layerIndex ? "black" : "white"}
-                        stroke="black"
-                        strokeWidth="2"
-                        className="transition-all duration-500"
-                      />
-                    </>
-                  )}
+                      return (
+                        <circle
+                          key={neuronIndex}
+                          cx="16"
+                          cy={y}
+                          r="16"
+                          fill={isActive ? "black" : "white"}
+                          stroke="black"
+                          strokeWidth="2"
+                          className="transition-all duration-500"
+                          style={{
+                            filter: isActive ? 'drop-shadow(0 0 6px rgba(0,0,0,0.3))' : 'none'
+                          }}
+                        />
+                      );
+                    })}
+                    
+                    {/* Ellipsis and last neuron */}
+                    {showEllipsis && (
+                      <>
+                        {/* Last neuron */}
+                        <circle
+                          cx="16"
+                          cy={(actualVisibleCount - (actualVisibleCount - 1) / 2) * neuronSpacing + 48}
+                          r="16"
+                          fill={animationStep > layerIndex ? "black" : "white"}
+                          stroke="black"
+                          strokeWidth="2"
+                          className="transition-all duration-500"
+                          style={{
+                            filter: animationStep > layerIndex ? 'drop-shadow(0 0 6px rgba(0,0,0,0.3))' : 'none'
+                          }}
+                        />
+                        
+                        {/* Ellipsis text below the last neuron */}
+                        <text
+                          x="16"
+                          y={(actualVisibleCount - (actualVisibleCount - 1) / 2) * neuronSpacing + 78}
+                          textAnchor="middle"
+                          className="text-xs fill-gray-600"
+                        >
+                          ...{layerSize - actualVisibleCount} more
+                        </text>
+                      </>
+                    )}
+                  </g>
                 </g>
               );
             })}
@@ -255,11 +251,12 @@ const NetworkVisualizer: React.FC<NetworkVisualizerProps> = ({ modelData, isInfe
         </div>
       </div>
       
-      <div className="mt-4 text-center text-gray-600 text-sm">
-        {isInferenceRunning ? 
-          'Watch the data flow through your neural network!' : 
-          'Make a prediction to see the network in action'
-        }
+      {/* Network Architecture Summary */}
+      <div className="mt-6 text-center text-sm text-gray-600">
+        <p>Architecture: {layers.join(' → ')} neurons</p>
+        {modelData.training_config.activation_names.length > 0 && (
+          <p>Activations: {modelData.training_config.activation_names.join(', ')}</p>
+        )}
       </div>
     </div>
   );
