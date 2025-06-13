@@ -1,0 +1,10 @@
+[build]
+  base = "client"
+  publish = "dist"  # Vite uses "dist" as the default build output directory
+  command = "vite build"  # Directly use the vite build command as in your scripts
+
+# Handle single-page application routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
