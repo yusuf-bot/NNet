@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, Brain, Settings } from 'lucide-react';
+import { Upload, Brain, Settings, AlertCircle } from 'lucide-react';
 import { trainModel } from '../api';
 
 interface TrainingPanelProps {
@@ -93,16 +94,24 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ onModelTrained, onBack })
             <Brain className="w-8 h-8 text-foreground mr-3" />
             <h2 className="text-3xl font-bold text-foreground">Train New Model</h2>
           </div>
-          <div className='flex items-center mb-4'>
-            <p className="text-l font-bold text-foreground">
-            Ensure that the CSV is properly configured with input fields labeled "x1" and "x2", and output fields, if present, labeled "y1" and "y2". The model performs optimally with supervised learning but can also support unsupervised learning.
-            </p>
+          
+          {/* Highlighted CSV configuration notice */}
+          <div className="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="text-amber-800 font-semibold mb-2">Important: CSV Configuration</h4>
+                <p className="text-amber-700 text-sm leading-relaxed">
+                  Ensure that the CSV is properly configured with input fields labeled <strong>"x1"</strong> and <strong>"x2"</strong>, 
+                  and output fields, if present, labeled <strong>"y1"</strong> and <strong>"y2"</strong>. 
+                  The model performs optimally with supervised learning but can also support unsupervised learning.
+                </p>
+              </div>
+            </div>
           </div>
         
           <p className="text-muted-foreground">Upload your training data and configure your neural network</p>
-          
-        
-      </div>
+        </div>
 
         {error && (
           <div className="mb-4 text-red-500">
