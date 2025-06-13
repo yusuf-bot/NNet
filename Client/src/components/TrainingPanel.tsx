@@ -93,11 +93,12 @@ const TrainingPanel: React.FC<TrainingPanelProps> = ({ onModelTrained, onBack })
             <Brain className="w-8 h-8 text-foreground mr-3" />
             <h2 className="text-3xl font-bold text-foreground">Train New Model</h2>
           </div>
-          <div className='flex items-center mb-4'>
-            <p className="text-l font-bold text-foreground">
-            Ensure that the CSV is properly configured with input fields labeled "x1" and "x2", and output fields, if present, labeled "y1" and "y2". The model performs optimally with supervised learning but can also support unsupervised learning.
-            </p>
-          </div>
+         <div className="flex items-start mb-6">
+  <p className="text-base text-gray-700 font-medium leading-relaxed">
+    <span className="font-semibold text-black">NOTE:</span> Ensure that the CSV is properly configured with input fields labeled <span className="font-semibold text-black">"x1"</span> and <span className="font-semibold text-black">"x2"</span>, and output fields, if present, labeled <span className="font-semibold text-black">"y1"</span> and <span className="font-semibold text-black">"y2"</span>. The model performs optimally with supervised learning but can also support unsupervised learning.
+  </p>
+</div>
+
         
           <p className="text-muted-foreground">Upload your training data and configure your neural network</p>
           

@@ -83,6 +83,25 @@ const Index = () => {
         {/* Main Content */}
         {activeView === 'menu' && (
           <div className="max-w-3xl mx-auto">
+            <div className="text-center max-w-3xl">
+    <p className="text-lg mb-4">
+      A lightweight, intuitive tool to build and train neural networks on any CSV dataset — no coding required.
+    </p>
+    <p className="mb-4">
+      Originally this started as a personal project, this app was designed to make it easy to experiment with neural networks using just <strong>NumPy</strong> and <strong>Pandas</strong>. Whether you're working with labeled or unlabeled data, the tool helps you quickly configure models, train them, and visualize performance — all from a simple interface.
+    </p>
+    <p>
+      Perfect for students, hobbyists, and anyone curious about how neural networks work under the hood.
+    </p>
+    <div className="mt-6 space-x-6">
+      <p> Check out my other projects at <a href="https://yusuf-bot.github.io" className="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">
+        My Website
+      </a></p>
+      <p> Check out the source code for this at <a href="https://github.com/yusuf-bot/build-a-brain" className="text-blue-600 underline hover:text-blue-800" target="_blank" rel="noopener noreferrer">
+        Build-A-Brain on GitHub
+      </a></p>
+    </div>
+  </div>
             <div className="grid md:grid-cols-2 gap-8">
               {/* Train New Model */}
               <div className="p-8 text-center border-2 border-border rounded-lg hover:border-foreground transition-colors">
