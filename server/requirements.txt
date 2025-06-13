@@ -1,10 +1,6 @@
 flask
 flask-cors
 requests
-glob
-os
 numpy
 pandas
-datetime
-json
 gunicorn
